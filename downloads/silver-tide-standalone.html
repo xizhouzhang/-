@@ -152,7 +152,7 @@ body.immersive .chrome *{pointer-events:none}
 <label for="trail">光丝长度 <output id="trail-out">0.92</output></label><input id="trail" type="range" min="0" max="1" step="0.01" value="0.92">
 <label for="density">光丝密度 <output id="density-out">1.00</output></label><input id="density" type="range" min="0.15" max="1.5" step="0.01" value="1">
 <label for="glow">粒子亮度 <output id="glow-out">1.20</output></label><input id="glow" type="range" min="0.3" max="2" step="0.01" value="1.2">
-<div class="water-controls"><span>水面与倒影</span><small>流光随波纹散开</small></div>
+<div class="water-controls"><span>水面与倒影</span><small>清透反射，轻柔涟漪</small></div>
 <label for="ripples">涟漪强度 <output id="ripples-out">0.80</output></label><input id="ripples" type="range" min="0" max="2" step="0.01" value="0.8">
 <label for="reflectivity">倒影强度 <output id="reflectivity-out">1.25</output></label><input id="reflectivity" type="range" min="0" max="1.8" step="0.01" value="1.25">
 </div>
@@ -271,7 +271,8 @@ void main(){
  if(uPoints<.5){vec2 d=(pb.xy/pb.w-pa.xy/pa.w)*uResolution;vec2 n=normalize(vec2(-d.y,d.x)+vec2(.0001));p.xy+=n*aCorner.x*aStyle.y*uScale*perspective/uResolution*p.w;}
  else p=pb;
  gl_Position=p;gl_PointSize=clamp((1.45+aStyle.y*1.3)*uScale*perspective,1.,7.);
- vAlpha=aStyle.x*(1.-smoothstep(48.,90.,p.w));vSide=aCorner.x;vTint=aStyle.z;
+ float surface=mix(.24,1.,smoothstep(.025,.38,mix(aStart.y,aEnd.y,aCorner.y)));
+ vAlpha=aStyle.x*surface*(1.-smoothstep(48.,90.,p.w));vSide=aCorner.x;vTint=aStyle.z;
 }`;
   const fragment=`precision highp float;
 uniform vec3 uColor;
@@ -298,43 +299,42 @@ uniform vec2 uTexel,uPointer;
 uniform vec4 uRings[3];
 uniform float uTime,uRipples,uReflection;
 varying vec2 vWorld;varying vec4 vClip;
-float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
-float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+1.),f.x),f.y);}
 float height(vec2 p){
- float t=uTime;float h=sin(p.x*.8+p.y*2.4+t*.7)*.017+sin(p.x*1.8-p.y*4.3-t*.8)*.008;
- h+=(noise(p*vec2(2.2,5.1)+vec2(t*.15,-t*.25))-.5)*.015;
- float d=distance(p,uPointer);h+=sin(d*4.-t*4.)*exp(-d*.44)*.045;
- for(int i=0;i<3;i++){vec4 r=uRings[i];float d=distance(p,r.xy);float front=d-r.z*3.1;h+=sin(d*6.-r.z*13.)*exp(-front*front*.4-r.z*.8)*r.w*.07;}
+ float t=uTime;
+ float h=sin(p.x*.24+p.y*.39+t*.36)*.009+sin(p.x*.53-p.y*.21-t*.27)*.004;
+ float d=distance(p,uPointer);h+=sin(d*2.5-t*2.8)*exp(-d*.55)*.010;
+ for(int i=0;i<3;i++){vec4 r=uRings[i];float d=distance(p,r.xy);float front=d-r.z*2.7;h+=sin(front*3.7)*exp(-front*front*.85-r.z*1.05)*r.w*.022;}
  return h*uRipples;
 }
 void main(){
- vec2 p=vWorld;float h=height(p),e=.045;
+ vec2 p=vWorld;float h=height(p),e=.07;
  vec2 slope=vec2(height(p+vec2(e,0.))-h,height(p+vec2(0.,e))-h)/e;
  vec3 n=normalize(vec3(-slope.x,1.,-slope.y));vec3 eye=normalize(uEye-vec3(p.x,0.,p.y));
- float fresnel=.20+.8*pow(1.-max(0.,dot(n,eye)),3.);
+ float fresnel=.025+.975*pow(1.-max(0.,dot(n,eye)),5.);
  vec2 uv=vClip.xy/vClip.w*.5+.5;
- vec2 shift=vec2(slope.x*.022,slope.y*.017)*clamp(30./vClip.w,.4,2.);
+ vec2 shift=vec2(slope.x*.018,slope.y*.013)*clamp(30./vClip.w,.4,2.);
  uv+=shift;
- vec2 blur=uTexel*vec2(4.+abs(slope.y)*28.,.8);
- vec3 reflection=texture2D(uImage,clamp(uv,.001,.999)).rgb*.5+texture2D(uImage,clamp(uv+blur,.001,.999)).rgb*.25+texture2D(uImage,clamp(uv-blur,.001,.999)).rgb*.25;
- reflection*=uReflection*(.3+.8*fresnel*fresnel);
+ vec2 blur=uTexel*vec2(.65,.35);
+ vec3 reflection=texture2D(uImage,clamp(uv,.001,.999)).rgb*.86+texture2D(uImage,clamp(uv+blur,.001,.999)).rgb*.07+texture2D(uImage,clamp(uv-blur,.001,.999)).rgb*.07;
+ reflection=reflection/(1.+reflection*.32);
+ reflection*=vec3(.90,.97,1.)*uReflection*(.24+.82*fresnel);
  float attenuation=1.-smoothstep(40.,100.,length(uEye-vec3(p.x,0.,p.y)));
- gl_FragColor=vec4((reflection+vec3(.0002,.0006,.0011))*attenuation,1.);
+ gl_FragColor=vec4((reflection+vec3(.00003,.00008,.00013))*attenuation,1.);
 }`;
   this.water=this.link(waterVertex,waterFragment);this.wa=gl.getAttribLocation(this.water,'aPosition');this.wu=this.uniforms(this.water,['VP','Image','Eye','Color','Texel','Pointer','Time','Ripples','Reflection']);this.wu.Rings=gl.getUniformLocation(this.water,'uRings[0]');
   this.plane=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,this.plane);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-100,-85,100,-85,-100,35,-100,35,100,-85,100,35]),gl.STATIC_DRAW);
   const blurFragment=`precision highp float;uniform sampler2D uImage;uniform vec2 uStep;varying vec2 vUV;void main(){vec3 c=texture2D(uImage,vUV).rgb*.227027;c+=texture2D(uImage,vUV+uStep*1.384615).rgb*.316216;c+=texture2D(uImage,vUV-uStep*1.384615).rgb*.316216;c+=texture2D(uImage,vUV+uStep*3.230769).rgb*.07027;c+=texture2D(uImage,vUV-uStep*3.230769).rgb*.07027;gl_FragColor=vec4(c,1.);}`;
   this.blur=this.link(screenVertex,blurFragment);this.ba=gl.getAttribLocation(this.blur,'aPosition');this.bu=this.uniforms(this.blur,['Image','Step']);
-  const finalFragment=`precision highp float;uniform sampler2D uImage,uBloom;uniform float uGlow;varying vec2 vUV;void main(){vec3 c=texture2D(uImage,vUV).rgb;vec3 b=texture2D(uBloom,vUV).rgb;c=c+b*uGlow*.92;c=pow(max(c,vec3(0.)),vec3(.92));gl_FragColor=vec4(c,1.);}`;
-  this.finish=this.link(screenVertex,finalFragment);this.ca=gl.getAttribLocation(this.finish,'aPosition');this.cu=this.uniforms(this.finish,['Image','Bloom','Glow']);
+  const finalFragment=`precision highp float;uniform sampler2D uImage,uLight,uBloom;uniform float uGlow;varying vec2 vUV;void main(){vec3 c=texture2D(uImage,vUV).rgb+texture2D(uLight,vUV).rgb;vec3 b=texture2D(uBloom,vUV).rgb;c=c+b*uGlow*.92;c=pow(max(c,vec3(0.)),vec3(.92));gl_FragColor=vec4(c,1.);}`;
+  this.finish=this.link(screenVertex,finalFragment);this.ca=gl.getAttribLocation(this.finish,'aPosition');this.cu=this.uniforms(this.finish,['Image','Light','Bloom','Glow']);
   this.screen=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,this.screen);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
-  this.targets={mirror:this.target(),scene:this.target(),blurA:this.target(),blurB:this.target()};gl.disable(gl.DEPTH_TEST);gl.blendFunc(gl.ONE,gl.ONE);
+  this.targets={mirror:this.target(),scene:this.target(),light:this.target(),blurA:this.target(),blurB:this.target()};gl.disable(gl.DEPTH_TEST);gl.blendFunc(gl.ONE,gl.ONE);
  }
  link(v,f){const gl=this.gl,p=gl.createProgram();for(const [type,src] of [[gl.VERTEX_SHADER,v],[gl.FRAGMENT_SHADER,f]]){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));gl.attachShader(p,s);}gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(p));return p;}
  uniforms(p,names){const o={};names.forEach(n=>o[n]=this.gl.getUniformLocation(p,'u'+n));return o;}
  target(){const gl=this.gl,t={texture:gl.createTexture(),fbo:gl.createFramebuffer()};gl.bindTexture(gl.TEXTURE_2D,t.texture);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return t;}
  sizeTarget(t,w,h){const gl=this.gl;t.width=w;t.height=h;gl.bindTexture(gl.TEXTURE_2D,t.texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);gl.bindFramebuffer(gl.FRAMEBUFFER,t.fbo);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t.texture,0);if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('无法创建反射画面');}
- resize(w,h){this.width=w;this.height=h;this.sizeTarget(this.targets.scene,w,h);const s=Math.min(1,1600/w);this.sizeTarget(this.targets.mirror,Math.max(1,Math.round(w*s)),Math.max(1,Math.round(h*s)));for(const k of ['blurA','blurB'])this.sizeTarget(this.targets[k],Math.max(1,Math.round(w/4)),Math.max(1,Math.round(h/4)));this.gl.bindFramebuffer(this.gl.FRAMEBUFFER,null);}
+ resize(w,h){this.width=w;this.height=h;this.sizeTarget(this.targets.scene,w,h);this.sizeTarget(this.targets.light,w,h);const s=Math.min(1,1600/w);this.sizeTarget(this.targets.mirror,Math.max(1,Math.round(w*s)),Math.max(1,Math.round(h*s)));for(const k of ['blurA','blurB'])this.sizeTarget(this.targets[k],Math.max(1,Math.round(w/4)),Math.max(1,Math.round(h/4)));this.gl.bindFramebuffer(this.gl.FRAMEBUFFER,null);}
  upload(ocean,length,visibility=1){
   const h=ocean.history,N=FilamentOcean.HISTORY;let k=0,head=0;const maxAge=Math.max(2,Math.round((N-1)*length));
   for(const p of ocean.particles){
@@ -371,15 +371,16 @@ void main(){
  screenPass(program,loc){const gl=this.gl;this.disable();gl.useProgram(program);gl.disable(gl.BLEND);gl.bindBuffer(gl.ARRAY_BUFFER,this.screen);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);}
  render(vp,eye,params,ocean,pointer,color,drive,dpr){
   const gl=this.gl,t=this.targets,gain=2.6*params.glow,height=params.heightScale??1;
-  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,null);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,null);gl.activeTexture(gl.TEXTURE0);
-  this.bind(t.mirror);gl.clearColor(0,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT);if(params.reflection)this.drawFibers(vp,1,t.mirror.width,t.mirror.height,dpr*t.mirror.width/this.width,color,gain,height);
+  gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,null);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,null);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,null);
+  this.bind(t.mirror);gl.clearColor(0,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT);if(params.reflection)this.drawFibers(vp,1,t.mirror.width,t.mirror.height,dpr*t.mirror.width/this.width,color,gain*.70,height);
   this.bind(t.scene);gl.clear(gl.COLOR_BUFFER_BIT);this.disable();gl.useProgram(this.water);gl.disable(gl.BLEND);gl.bindBuffer(gl.ARRAY_BUFFER,this.plane);gl.enableVertexAttribArray(this.wa);gl.vertexAttribPointer(this.wa,2,gl.FLOAT,false,0,0);
   const u=this.wu;gl.uniformMatrix4fv(u.VP,false,vp);gl.uniform3fv(u.Eye,eye);gl.uniform3fv(u.Color,color);gl.uniform2f(u.Texel,1/t.mirror.width,1/t.mirror.height);gl.uniform2fv(u.Pointer,pointer);gl.uniform1f(u.Time,ocean.clock);gl.uniform1f(u.Ripples,params.ripples);gl.uniform1f(u.Reflection,params.reflection?params.reflectivity:0);
   const rings=new Float32Array(12);for(let i=0;i<3;i++){const r=ocean.rings[i];rings.set(r?[r.x,r.z,ocean.clock-r.born,r.strength]:[80,80,100,0],i*4);}gl.uniform4fv(u.Rings,rings);gl.bindTexture(gl.TEXTURE_2D,t.mirror.texture);gl.uniform1i(u.Image,0);gl.drawArrays(gl.TRIANGLES,0,6);
-  this.drawFibers(vp,0,this.width,this.height,dpr,color,gain,height);
-  this.bind(t.blurA);this.screenPass(this.blur,this.ba);gl.bindTexture(gl.TEXTURE_2D,t.scene.texture);gl.uniform1i(this.bu.Image,0);gl.uniform2f(this.bu.Step,1/t.blurA.width,0);gl.drawArrays(gl.TRIANGLES,0,6);
+  // Filament light blooms independently of the polished, non-emissive water.
+  this.bind(t.light);gl.clear(gl.COLOR_BUFFER_BIT);this.drawFibers(vp,0,this.width,this.height,dpr,color,gain,height);
+  this.bind(t.blurA);this.screenPass(this.blur,this.ba);gl.bindTexture(gl.TEXTURE_2D,t.light.texture);gl.uniform1i(this.bu.Image,0);gl.uniform2f(this.bu.Step,1/t.blurA.width,0);gl.drawArrays(gl.TRIANGLES,0,6);
   this.bind(t.blurB);this.screenPass(this.blur,this.ba);gl.bindTexture(gl.TEXTURE_2D,t.blurA.texture);gl.uniform2f(this.bu.Step,0,1/t.blurB.height);gl.drawArrays(gl.TRIANGLES,0,6);
-  this.bind(null);this.screenPass(this.finish,this.ca);gl.bindTexture(gl.TEXTURE_2D,t.scene.texture);gl.uniform1i(this.cu.Image,0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,t.blurB.texture);gl.uniform1i(this.cu.Bloom,1);gl.uniform1f(this.cu.Glow,params.glow);gl.drawArrays(gl.TRIANGLES,0,6);gl.activeTexture(gl.TEXTURE0);this.disable();
+  this.bind(null);this.screenPass(this.finish,this.ca);gl.bindTexture(gl.TEXTURE_2D,t.scene.texture);gl.uniform1i(this.cu.Image,0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,t.blurB.texture);gl.uniform1i(this.cu.Bloom,1);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,t.light.texture);gl.uniform1i(this.cu.Light,2);gl.uniform1f(this.cu.Glow,params.glow);gl.drawArrays(gl.TRIANGLES,0,6);gl.activeTexture(gl.TEXTURE0);this.disable();
  }
 };
 })(globalThis);
