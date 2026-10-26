@@ -9,10 +9,17 @@
 需要 Node.js 18 或更新版本，无需安装第三方依赖。
 
 ```sh
-npm run dev
+node scripts/serve.cjs
 ```
 
 打开终端显示的 `http://127.0.0.1:4173/`。
+
+已安装 npm 时也可以用 `npm run dev`。如果端口被占用，在 PowerShell 中指定另一个端口：
+
+```powershell
+$env:PORT = '4187'
+node scripts/serve.cjs
+```
 
 也可使用 Python：
 
