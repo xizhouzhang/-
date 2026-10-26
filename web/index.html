@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#030609"><meta name="description" content="银白粒子汇成海浪，光丝流动，倒影随波起伏。可调节的实时粒子海浪实验。">
+<title>银潮 · 流光海浪</title>
+<link rel="stylesheet" href="glass.css?v=20261026-glass">
+</head>
+<body>
+<canvas id="ocean" aria-label="实时银白色粒子海浪，拖动改变视角，滚轮缩放"></canvas>
+<div id="failure" hidden>当前浏览器无法启动 WebGL，请使用支持硬件加速的 Chrome 或 Edge。</div>
+<header class="chrome"><a class="brand" href="#" aria-label="银潮首页"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 8c3-5 5 5 9 0s6 1 9-4M3 14c3-5 5 5 9 0s6 1 9-4M3 20c3-5 5 5 9 0s6 1 9-4"/></svg></span><span>银潮<small>粒子海浪实验</small></span></a><div class="header-right"><span class="live"><i></i><span id="state">实时演算中</span></span><button id="hide" class="icon" title="隐藏面板 (H)" aria-label="隐藏控制面板"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M14 5v14"/></svg></button><button id="fullscreen" class="icon" title="全屏 (F)" aria-label="切换全屏"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/></svg></button></div></header>
+<main class="chrome">
+<aside id="panel" aria-label="海浪控制面板">
+<div class="panel-head"><div><h1>流光海浪</h1><p>实时调节海浪与水面</p></div><button id="reset" class="icon" title="重置所有参数" aria-label="重置参数"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 7M4 4v6h6"/></svg></button></div>
+<div class="preset-group" aria-label="海浪预设"><button class="preset active" data-preset="silver">参考节奏</button><button class="preset" data-preset="storm">强浪</button><button class="preset" data-preset="dream">缓流</button></div>
+<div class="controls">
+<label for="amplitude">波浪高度 <output id="amplitude-out">1.00</output></label><input id="amplitude" type="range" min="0.2" max="2" step="0.01" value="1">
+<label for="speed">流动速度 <output id="speed-out">1.00</output></label><input id="speed" type="range" min="0.05" max="2" step="0.01" value="1">
+<label for="trail">光丝长度 <output id="trail-out">0.92</output></label><input id="trail" type="range" min="0" max="1" step="0.01" value="0.92">
+<label for="density">光丝密度 <output id="density-out">1.00</output></label><input id="density" type="range" min="0.15" max="1.5" step="0.01" value="1">
+<label for="glow">粒子亮度 <output id="glow-out">1.20</output></label><input id="glow" type="range" min="0.3" max="2" step="0.01" value="1.2">
+<div class="water-controls"><span>水面与倒影</span><small>流光随波纹散开</small></div>
+<label for="ripples">涟漪强度 <output id="ripples-out">0.80</output></label><input id="ripples" type="range" min="0" max="2" step="0.01" value="0.8">
+<label for="reflectivity">倒影强度 <output id="reflectivity-out">1.25</output></label><input id="reflectivity" type="range" min="0" max="1.8" step="0.01" value="1.25">
+</div>
+<div class="switch-row"><label for="reflection">水面倒影</label><input id="reflection" type="checkbox" checked><label class="switch" for="reflection" aria-hidden="true"></label></div>
+<div class="motion-row"><span id="splash-status" aria-live="polite">光丝回流</span><button id="splash-trigger" title="立即涌起一簇流光">涌起一阵浪</button></div>
+<div class="music"><div><span class="music-icon">♫</span><span id="audio-name">让海浪跟随音乐<small id="audio-status">默认跟随参考视频的强弱节奏</small></span></div><label class="upload" for="audio-file" title="选择本地音频" tabindex="0">＋<input id="audio-file" type="file" accept="audio/*" hidden></label></div>
+<div id="audio-actions" hidden><button id="audio-toggle">播放音乐</button><button id="audio-clear">移除</button></div>
+<div class="controls audio-gain-controls" id="audio-gain-controls" hidden><label for="audio-gain">节拍灵敏度 <output id="audio-gain-out">1.25</output></label><input id="audio-gain" type="range" min="0.5" max="3" step="0.05" value="1.25"></div>
+<p class="music-mapping">音乐带动流速、丝长与密度<br>浪高与亮度由滑块独立控制</p>
+<div class="actions"><button id="pause" aria-label="暂停海浪"><span id="pause-icon">Ⅱ</span><span id="pause-text">暂停</span></button><button id="snapshot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/></svg><span>保存画面</span></button></div>
+<div class="panel-foot"><span id="particle-count">流光汇聚中</span><span id="fps">— fps</span></div>
+</aside>
+</main>
+<footer class="chrome"><span class="footer-title">光与引力之间，一场无声的潮汐。</span><div><span><kbd>拖动</kbd> 旋转</span><span><kbd>滚轮</kbd> 缩放</span><span><kbd>空格</kbd> 暂停</span><span><kbd>H</kbd> 沉浸</span></div></footer>
+<button id="show" aria-label="显示控制面板"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2"/><circle cx="15" cy="17" r="2"/></svg>调节效果</button>
+<div class="audio-dock" id="audio-dock">
+<button id="system-audio" title="连接音乐软件正在播放的系统声音">♫ 跟随电脑音乐</button>
+<span id="audio-meter" class="audio-meter" role="meter" aria-label="接收的音乐音量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span id="audio-meter-fill"></span></span>
+<button id="audio-help-toggle" aria-label="如何连接音乐软件" title="如何连接音乐软件">?</button>
+</div>
+<section id="audio-help" class="audio-help" aria-label="连接音乐软件说明" hidden>
+<div class="audio-help-head"><strong>跟随正在播放的音乐</strong><button id="audio-help-close" aria-label="关闭音乐连接说明">×</button></div>
+<ol><li>让音乐软件保持播放。</li><li>点击“跟随电脑音乐”。</li><li>在浏览器弹窗选择“整个屏幕”，打开“共享系统音频”，再点“共享”。网页音乐也可选择对应标签页并共享音频。</li></ol>
+<p>音乐增强时流速加快、光丝拉长、浪群更密。波浪高度与粒子亮度由滑块独立控制。</p>
+<p id="audio-help-message" role="status">声音仅在本机分析。连接成功后立即停止画面轨道，只分析音频。</p>
+<p class="audio-browser-note">若内置浏览器没有系统音频选项，请用 Windows 上的 Chrome 或 Edge 打开本页。</p>
+<button id="copy-audio-link">复制网页链接</button><input id="audio-page-link" type="text" readonly aria-label="网页链接" hidden>
+</section>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="reference-rhythm.js?v=20261026-glass"></script><script src="filament-ocean.js?v=20261026-glass"></script><script src="filament-renderer.js?v=20261026-glass"></script><script src="audio-input.js?v=20261026-glass"></script><script src="music-motion.js?v=20261026-glass"></script><script src="experience.js?v=20261026-glass"></script>
+</body></html>

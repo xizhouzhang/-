@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#030609"><meta name="description" content="银白粒子汇成海浪，光丝流动，倒影随波起伏。可调节的实时粒子海浪实验。">
+<title>银潮 · 流光海浪</title>
+<style>:root {
+ color-scheme:dark;
+ --text:#f5f7fa; --muted:#b2beca; --line:rgba(255,255,255,.14);
+ --glass:linear-gradient(135deg,rgba(220,232,246,.20),rgba(100,119,139,.10) 47%,rgba(196,217,239,.15));
+ --edge:inset 0 1px 0 rgba(255,255,255,.36),inset 0 -1px 0 rgba(255,255,255,.07),inset 1px 0 0 rgba(255,255,255,.09);
+ --shadow:0 20px 60px rgba(0,0,0,.32),0 3px 10px rgba(0,0,0,.14);
+ font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#020406;color:var(--text);font-size:13px;line-height:1.5;overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input,.upload{font:inherit}
+button,a,.upload{-webkit-tap-highlight-color:transparent}
+button{color:inherit;cursor:pointer;border:1px solid var(--line);background:rgba(255,255,255,.07);transition:background .18s,box-shadow .18s,transform .18s}
+button:hover,.upload:hover{background:rgba(255,255,255,.17)}
+button:active,.upload:active{transform:scale(.96)}
+button:disabled{opacity:.5;cursor:wait}
+button:focus-visible,a:focus-visible,input:focus-visible,.upload:focus-visible{outline:2px solid #cae8ff;outline-offset:4px}
+button svg,.brand-mark svg{width:19px;height:19px;display:block;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+#ocean{display:block;width:100vw;height:100vh;touch-action:none;cursor:grab}
+#ocean:active{cursor:grabbing}
+header{position:fixed;inset:0 0 auto;padding:26px 28px;display:flex;align-items:center;justify-content:space-between;pointer-events:none;z-index:2}
+.brand,.header-right,#show,.audio-dock,#panel,.audio-help,#toast {
+ background:var(--glass);background-color:rgba(28,35,44,.40);
+ -webkit-backdrop-filter:blur(28px) saturate(155%);backdrop-filter:blur(28px) saturate(155%);
+ border:1px solid rgba(255,255,255,.21);box-shadow:var(--edge),var(--shadow);
+}
+.brand{display:flex;align-items:center;gap:11px;padding:10px 17px 10px 13px;border-radius:25px;color:var(--text);text-decoration:none;pointer-events:auto;font-size:17px;font-weight:600;letter-spacing:.04em}
+.brand-mark{display:grid;place-items:center;width:33px;height:33px;border-radius:50%;background:rgba(255,255,255,.08);color:#e1edfa}
+.brand-mark svg{width:24px;height:24px}
+.brand small{display:block;color:#c1ccd7;font-size:9px;line-height:1.4;letter-spacing:.05em;font-weight:400;margin-top:1px}
+.header-right{display:flex;align-items:center;gap:4px;pointer-events:auto;padding:4px;border-radius:30px}
+.live{display:none}
+.icon{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;border:0;background:transparent;color:#e3eaf1;font-size:22px;line-height:1}
+main{position:fixed;inset:0;pointer-events:none}
+#panel{position:absolute;right:28px;top:100px;width:324px;max-height:calc(100dvh - 160px);padding:24px 24px 0;border-radius:32px;pointer-events:auto;overflow:auto;scrollbar-width:thin;scrollbar-color:rgba(227,237,247,.25) transparent;isolation:isolate}
+#panel::before{content:"";position:absolute;top:0;left:26px;right:26px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.48),transparent);pointer-events:none}
+#panel::-webkit-scrollbar{width:3px}#panel::-webkit-scrollbar-thumb{background:#ffffff33;border-radius:4px}#panel::-webkit-scrollbar-button{display:none}
+.panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.panel-head h1{font-size:21px;font-weight:600;letter-spacing:-.025em;margin:0 0 4px;line-height:1.3}
+.panel-head p{font-size:11px;color:var(--muted);margin:0}
+.panel-head .icon{margin:-4px -5px 0 0;color:#cdd8e2;background:rgba(255,255,255,.06);width:32px;height:32px}
+.panel-head .icon svg{width:16px;height:16px}
+.preset-group{display:flex;gap:3px;padding:4px;border-radius:16px;background:rgba(0,0,0,.19);box-shadow:inset 0 1px 3px #0002;margin:19px 0 17px}
+.preset{flex:1;border:1px solid transparent;border-radius:12px;background:transparent;color:#bac5d1;font-size:11px;font-weight:500;padding:8px 0;white-space:nowrap}
+.preset.active{background:linear-gradient(170deg,rgba(245,249,255,.23),rgba(215,230,246,.13));border-color:rgba(255,255,255,.20);color:#fff;box-shadow:inset 0 1px 0 #ffffff26,0 3px 8px #0003}
+.controls label{display:flex;justify-content:space-between;align-items:center;color:#e2e8ee;font-size:12px;margin-top:13px;gap:10px}
+output{font-size:11px;color:#c7d3df;font-variant-numeric:tabular-nums;line-height:1.4;background:rgba(0,0,0,.13);padding:2px 7px;border-radius:6px;min-width:39px;text-align:center}
+input[type=range]{appearance:none;-webkit-appearance:none;display:block;width:100%;height:22px;background:transparent;cursor:pointer;margin:5px 0 0;border-radius:10px}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:9px;background:linear-gradient(to right,#e9f2fc 0 var(--fill,44%),rgba(255,255,255,.14) var(--fill,44%) 100%);box-shadow:inset 0 1px 2px #0002}
+input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:18px;height:18px;margin-top:-6.5px;border:1px solid #fffd;border-radius:50%;background:linear-gradient(#fff,#d9e5f0);box-shadow:0 2px 6px #0005,0 0 0 .5px #ffffff4d}
+input[type=range]::-moz-range-track{height:5px;border-radius:9px;background:rgba(255,255,255,.19)}
+input[type=range]::-moz-range-progress{height:5px;border-radius:9px;background:#e9f2fc}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border:1px solid white;border-radius:50%;background:#eaf2fc;box-shadow:0 2px 6px #0005}
+.water-controls{display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding-top:17px;border-top:1px solid var(--line);font-size:12px;font-weight:600;color:#e4ebf3;gap:8px}
+.water-controls small{font-size:9px;font-weight:400;color:#acbbc9}
+.switch-row{position:relative;display:flex;align-items:center;justify-content:space-between;margin:13px 0 18px;min-height:29px;color:#e2e8ee;font-size:12px}
+.switch-row>label:first-child{cursor:pointer}
+.switch-row input{position:absolute;right:0;width:42px;height:26px;margin:0;opacity:0;z-index:1;cursor:pointer}
+.switch{width:42px;height:26px;position:relative;border-radius:20px;background:rgba(255,255,255,.2);box-shadow:inset 0 1px 3px #0003;pointer-events:none;transition:background .2s}
+.switch::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:linear-gradient(#fff,#edf0f4);box-shadow:0 1px 4px #0004;transition:transform .2s}
+.switch-row input:checked+.switch{background:#34c759}
+.switch-row input:checked+.switch::after{transform:translateX(16px)}
+.switch-row input:focus-visible+.switch{outline:2px solid #cae8ff;outline-offset:4px}
+.motion-row{display:flex;align-items:center;justify-content:space-between;margin:0 0 17px;gap:10px;color:#bac8d4;font-size:11px}
+.motion-row button{border-radius:18px;padding:7px 12px;font-size:10px;white-space:nowrap;background:rgba(255,255,255,.10);box-shadow:inset 0 1px 0 #ffffff1a}
+.music{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 0;border-top:1px solid var(--line)}
+.music>div{display:flex;align-items:center;gap:11px;min-width:0}
+.music-icon{display:grid;place-items:center;width:34px;height:34px;flex-shrink:0;border-radius:11px;background:linear-gradient(145deg,#d9e6f02e,#adcbec14);box-shadow:inset 0 1px 0 #ffffff24;color:#e8f1fc;font-size:22px}
+#audio-name{font-size:11px;max-width:186px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f0f4f8}
+#audio-status{display:block;margin-top:3px;color:#aebdcb;font-size:10px;line-height:1.5;max-width:186px;white-space:normal}
+.upload{display:grid;place-items:center;width:30px;height:30px;flex-shrink:0;border:1px solid var(--line);border-radius:50%;cursor:pointer;font-size:21px;color:#f3f7fc;background:rgba(255,255,255,.08)}
+#audio-actions{margin:-2px 0 15px;display:flex;gap:8px}
+#audio-actions button{font-size:10px;border-radius:14px;padding:6px 12px}
+.audio-gain-controls{margin:0 0 12px}
+.music-mapping{font-size:10px;line-height:1.7;color:#aebdcb;margin:0 0 17px}
+.actions{display:flex;gap:9px}
+.actions button{height:42px;border-radius:22px;flex:1;display:flex;align-items:center;justify-content:center;gap:8px;font-size:11px;font-weight:500;box-shadow:inset 0 1px 0 #ffffff1f}
+.actions button:first-child{background:linear-gradient(#f4f8fc,#dce7f2);color:#202e3e;border-color:#ffffffb3;box-shadow:0 3px 10px #0002,inset 0 1px 0 #fff}
+.actions button:first-child:hover{background:#fff}
+.actions button svg{width:15px;height:15px}
+.panel-foot{display:flex;justify-content:space-between;padding:17px 0 19px;font-size:10px;color:#9eafbf;font-variant-numeric:tabular-nums}
+footer{position:fixed;bottom:23px;left:30px;right:30px;display:flex;align-items:center;justify-content:space-between;gap:20px;font-size:10px;color:#b7c5d2;pointer-events:none;text-shadow:0 1px 8px #000}
+.footer-title{letter-spacing:.07em}
+footer>div{display:flex;gap:16px}
+kbd{font:9px inherit;color:#d2deea;border:1px solid #ffffff21;background:#ffffff09;border-radius:5px;padding:2px 5px;margin-right:4px}
+#show{position:fixed;right:28px;top:26px;height:46px;border-radius:26px;padding:0 18px;display:flex;align-items:center;gap:8px;font-size:11px;color:#eff5fc;z-index:3}
+#show svg{width:17px;height:17px}
+.audio-dock{position:fixed;top:26px;right:166px;height:46px;display:flex;align-items:center;gap:8px;padding:4px 5px 4px 7px;border-radius:27px;z-index:3;--beat:0}
+.audio-dock>button{height:36px;border:0;background:transparent;border-radius:22px;font-size:11px;padding:0 11px;color:#eef5fc;white-space:nowrap}
+.audio-dock>button:hover{background:rgba(255,255,255,.12)}
+.audio-dock>button:last-child{width:30px;height:30px;padding:0;border:1px solid #ffffff21;color:#c6d6e5;font-size:12px;margin-right:2px}
+.audio-dock.connected>button:first-child{color:#bce8d0}
+.audio-meter{display:block;width:36px;height:4px;background:#ffffff1c;border-radius:4px;overflow:hidden}
+.audio-meter>span{display:block;width:100%;height:100%;background:#c9efdd;transform:scaleX(0);transform-origin:left;transition:transform .09s linear}
+.audio-help{position:fixed;right:28px;top:88px;width:348px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 112px);overflow:auto;padding:22px;border-radius:27px;color:#d0dce8;font-size:12px;line-height:1.8;z-index:5;background-color:rgba(26,33,42,.80)}
+.audio-help-head{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#f6f8fc}
+.audio-help-head strong{font-size:15px;font-weight:600}
+.audio-help-head button{border:0;width:27px;height:27px;border-radius:50%;font-size:19px;line-height:1;background:#ffffff12}
+.audio-help ol{padding-left:19px;margin:16px 0}
+.audio-help li{padding:3px 0}
+.audio-help p{font-size:11px;margin:12px 0}
+.audio-browser-note{color:#aabac9}
+.audio-help>button{padding:9px 15px;border-radius:20px;font-size:11px;background:#ffffff15}
+.audio-help input{width:100%;margin-top:12px;padding:9px;background:#0003;color:#edf5fc;border:1px solid var(--line);border-radius:10px}
+#toast{position:fixed;left:50%;bottom:70px;transform:translate(-50%,12px);padding:11px 19px;border-radius:24px;color:#e9f3fc;font-size:12px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:6;max-width:calc(100vw - 36px);text-align:center;background-color:rgba(31,44,56,.72)}
+#toast.visible{opacity:1;transform:translate(-50%,0)}
+.chrome{transition:opacity .25s}
+body.immersive .chrome{opacity:0;pointer-events:none}
+body.immersive .chrome *{pointer-events:none}
+#failure{position:fixed;top:40%;left:10%;right:10%;text-align:center;color:#edf5fc;font-size:16px}
+[hidden]{display:none!important}
+@media(min-width:761px) and (max-height:930px){
+ #panel{top:92px;max-height:calc(100dvh - 140px);padding:20px 22px 0}
+ .panel-head h1{font-size:19px}.preset-group{margin:14px 0 10px}
+ .controls label{margin-top:8px}input[type=range]{height:18px;margin-top:3px}
+ .water-controls{margin-top:13px;padding-top:12px}.switch-row{margin:8px 0 12px}
+ .motion-row{margin-bottom:12px}.music{padding:11px 0}.music-mapping{margin-bottom:12px}
+ .panel-foot{padding:12px 0 15px}
+}
+@media(max-width:760px){
+ header{padding:18px 16px}.brand{font-size:15px;padding:8px 13px 8px 10px}.brand-mark{width:27px;height:27px}.brand small{font-size:8px}
+ .header-right{position:fixed;right:16px;top:18px}.icon{width:32px;height:32px}
+ #show{top:18px;right:16px;height:42px;padding:0 14px;font-size:10px}
+ .audio-dock{top:auto;right:auto;left:50%;bottom:20px;transform:translateX(-50%);height:46px;max-width:calc(100vw - 32px);background-color:rgba(31,40,51,.66)}
+ #panel{right:16px;top:84px;width:min(324px,calc(100vw - 32px));max-height:calc(100dvh - 168px);padding:22px 22px 0;border-radius:28px}
+ .panel-head h1{font-size:19px}.preset-group{margin:16px 0 12px}.controls label{margin-top:11px}
+ .audio-help{top:auto;bottom:82px;right:16px;max-height:calc(100dvh - 110px)}
+ footer{display:none}
+ #toast{bottom:86px}.music-mapping{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){button,.upload,.chrome,.switch,.switch::after,#toast{transition:none}}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.brand,.header-right,#show,.audio-dock,#panel,.audio-help,#toast{background:rgba(35,43,53,.95)}}
+</style>
+</head>
+<body>
+<canvas id="ocean" aria-label="实时银白色粒子海浪，拖动改变视角，滚轮缩放"></canvas>
+<div id="failure" hidden>当前浏览器无法启动 WebGL，请使用支持硬件加速的 Chrome 或 Edge。</div>
+<header class="chrome"><a class="brand" href="#" aria-label="银潮首页"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 8c3-5 5 5 9 0s6 1 9-4M3 14c3-5 5 5 9 0s6 1 9-4M3 20c3-5 5 5 9 0s6 1 9-4"/></svg></span><span>银潮<small>粒子海浪实验</small></span></a><div class="header-right"><span class="live"><i></i><span id="state">实时演算中</span></span><button id="hide" class="icon" title="隐藏面板 (H)" aria-label="隐藏控制面板"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M14 5v14"/></svg></button><button id="fullscreen" class="icon" title="全屏 (F)" aria-label="切换全屏"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/></svg></button></div></header>
+<main class="chrome">
+<aside id="panel" aria-label="海浪控制面板">
+<div class="panel-head"><div><h1>流光海浪</h1><p>实时调节海浪与水面</p></div><button id="reset" class="icon" title="重置所有参数" aria-label="重置参数"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 7M4 4v6h6"/></svg></button></div>
+<div class="preset-group" aria-label="海浪预设"><button class="preset active" data-preset="silver">参考节奏</button><button class="preset" data-preset="storm">强浪</button><button class="preset" data-preset="dream">缓流</button></div>
+<div class="controls">
+<label for="amplitude">波浪高度 <output id="amplitude-out">1.00</output></label><input id="amplitude" type="range" min="0.2" max="2" step="0.01" value="1">
+<label for="speed">流动速度 <output id="speed-out">1.00</output></label><input id="speed" type="range" min="0.05" max="2" step="0.01" value="1">
+<label for="trail">光丝长度 <output id="trail-out">0.92</output></label><input id="trail" type="range" min="0" max="1" step="0.01" value="0.92">
+<label for="density">光丝密度 <output id="density-out">1.00</output></label><input id="density" type="range" min="0.15" max="1.5" step="0.01" value="1">
+<label for="glow">粒子亮度 <output id="glow-out">1.20</output></label><input id="glow" type="range" min="0.3" max="2" step="0.01" value="1.2">
+<div class="water-controls"><span>水面与倒影</span><small>流光随波纹散开</small></div>
+<label for="ripples">涟漪强度 <output id="ripples-out">0.80</output></label><input id="ripples" type="range" min="0" max="2" step="0.01" value="0.8">
+<label for="reflectivity">倒影强度 <output id="reflectivity-out">1.25</output></label><input id="reflectivity" type="range" min="0" max="1.8" step="0.01" value="1.25">
+</div>
+<div class="switch-row"><label for="reflection">水面倒影</label><input id="reflection" type="checkbox" checked><label class="switch" for="reflection" aria-hidden="true"></label></div>
+<div class="motion-row"><span id="splash-status" aria-live="polite">光丝回流</span><button id="splash-trigger" title="立即涌起一簇流光">涌起一阵浪</button></div>
+<div class="music"><div><span class="music-icon">♫</span><span id="audio-name">让海浪跟随音乐<small id="audio-status">默认跟随参考视频的强弱节奏</small></span></div><label class="upload" for="audio-file" title="选择本地音频" tabindex="0">＋<input id="audio-file" type="file" accept="audio/*" hidden></label></div>
+<div id="audio-actions" hidden><button id="audio-toggle">播放音乐</button><button id="audio-clear">移除</button></div>
+<div class="controls audio-gain-controls" id="audio-gain-controls" hidden><label for="audio-gain">节拍灵敏度 <output id="audio-gain-out">1.25</output></label><input id="audio-gain" type="range" min="0.5" max="3" step="0.05" value="1.25"></div>
+<p class="music-mapping">音乐带动流速、丝长与密度<br>浪高与亮度由滑块独立控制</p>
+<div class="actions"><button id="pause" aria-label="暂停海浪"><span id="pause-icon">Ⅱ</span><span id="pause-text">暂停</span></button><button id="snapshot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/></svg><span>保存画面</span></button></div>
+<div class="panel-foot"><span id="particle-count">流光汇聚中</span><span id="fps">— fps</span></div>
+</aside>
+</main>
+<footer class="chrome"><span class="footer-title">光与引力之间，一场无声的潮汐。</span><div><span><kbd>拖动</kbd> 旋转</span><span><kbd>滚轮</kbd> 缩放</span><span><kbd>空格</kbd> 暂停</span><span><kbd>H</kbd> 沉浸</span></div></footer>
+<button id="show" aria-label="显示控制面板"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2"/><circle cx="15" cy="17" r="2"/></svg>调节效果</button>
+<div class="audio-dock" id="audio-dock">
+<button id="system-audio" title="连接音乐软件正在播放的系统声音">♫ 跟随电脑音乐</button>
+<span id="audio-meter" class="audio-meter" role="meter" aria-label="接收的音乐音量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span id="audio-meter-fill"></span></span>
+<button id="audio-help-toggle" aria-label="如何连接音乐软件" title="如何连接音乐软件">?</button>
+</div>
+<section id="audio-help" class="audio-help" aria-label="连接音乐软件说明" hidden>
+<div class="audio-help-head"><strong>跟随正在播放的音乐</strong><button id="audio-help-close" aria-label="关闭音乐连接说明">×</button></div>
+<ol><li>让音乐软件保持播放。</li><li>点击“跟随电脑音乐”。</li><li>在浏览器弹窗选择“整个屏幕”，打开“共享系统音频”，再点“共享”。网页音乐也可选择对应标签页并共享音频。</li></ol>
+<p>音乐增强时流速加快、光丝拉长、浪群更密。波浪高度与粒子亮度由滑块独立控制。</p>
+<p id="audio-help-message" role="status">声音仅在本机分析。连接成功后立即停止画面轨道，只分析音频。</p>
+<p class="audio-browser-note">若内置浏览器没有系统音频选项，请用 Windows 上的 Chrome 或 Edge 打开本页。</p>
+<button id="copy-audio-link">复制网页链接</button><input id="audio-page-link" type="text" readonly aria-label="网页链接" hidden>
+</section>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>const REFERENCE_RHYTHM = [0.2745, 0.2816, 0.2914, 0.2941, 0.296, 0.3001, 0.242, 0.1842, 0.168, 0.1746, 0.1826, 0.2309, 0.245, 0.2065, 0.3995, 0.5213, 0.6008, 0.6572, 0.7013, 0.74, 0.7709, 0.7973, 0.8199, 0.8397, 0.8564, 0.8217, 0.6683, 0.4627, 0.3908, 0.3524, 0.3276, 0.3073, 0.2901, 0.2707, 0.2765, 0.3011, 0.3141, 0.323, 0.3432, 0.372, 0.4069, 0.4477, 0.4905, 0.5359, 0.5841, 0.6348, 0.6444, 0.6059, 0.5322, 0.5094, 0.5132, 0.5052, 0.4813, 0.4591, 0.435, 0.4113, 0.3847, 0.3594, 0.3303, 0.3008, 0.2694, 0.2361, 0.1646, 0.1182, 0.1147, 0.1086, 0.1019, 0.0965, 0.0908, 0.0883, 0.0851, 0.0813, 0.0788, 0.0751, 0.0548, 0.0546, 0.0427, 0.0409, 0.0401, 0.0404, 0.0415, 0.0431, 0.0455, 0.047, 0.0489, 0.05, 0.0515, 0.0525, 0.0533, 0.0544, 0.0551, 0.0555, 0.0556, 0.0556, 0.0553, 0.0549, 0.068, 0.0911, 0.1216, 0.1578, 0.1703, 0.2148, 0.2659, 0.3131, 0.3423, 0.3691, 0.392, 0.4189, 0.4437, 0.4596, 0.4659, 0.4701, 0.4566, 0.4287, 0.3899, 0.3432, 0.2963, 0.248, 0.194, 0.1311, 0.072, 0.0515, 0.0399, 0.0314, 0.0273, 0.0458, 0.3021, 0.4534, 0.6163, 0.7306, 0.8354, 0.9188, 0.9432, 0.9578, 0.9704, 0.9823, 0.9932, 1.0, 0.9219, 0.6602, 0.468, 0.436, 0.3963, 0.3401, 0.3183, 0.341, 0.3832, 0.4257, 0.4575, 0.4833, 0.4904, 0.4088, 0.3217, 0.2833, 0.2713, 0.2668, 0.2657, 0.2675, 0.2551, 0.1959, 0.0935, 0.182, 0.1891, 0.2129, 0.2339, 0.2481, 0.2593, 0.2746, 0.2916, 0.312, 0.3412, 0.3696, 0.3972, 0.4205, 0.4022, 0.3309, 0.2692, 0.2571, 0.266, 0.2836, 0.3117, 0.3416, 0.3765, 0.415, 0.4514, 0.4873, 0.5291, 0.3985, 0.1938, 0.0857, 0.0661, 0.0637, 0.0661, 0.0713, 0.0794, 0.0907, 0.1083, 0.135, 0.1065, 0.0477, 0.0582, 0.0564, 0.0562, 0.0625, 0.0816, 0.0997, 0.1148, 0.1302, 0.1465, 0.1631, 0.1773, 0.1913, 0.2049, 0.2186, 0.2299, 0.2356, 0.2394, 0.2438, 0.261, 0.2847, 0.3138, 0.3524, 0.3953, 0.4306, 0.4497, 0.4637, 0.4628, 0.4486, 0.4221, 0.3862, 0.3458, 0.297, 0.2835, 0.2871, 0.2699, 0.2633, 0.2633, 0.2687, 0.278, 0.2905, 0.3034, 0.3191, 0.1987, 0.2197, 0.2428, 0.2744, 0.296, 0.3107, 0.3233, 0.3343, 0.3448, 0.3442, 0.3403, 0.3436, 0.3452, 0.2929, 0.1802, 0.1377, 0.1378, 0.1426, 0.1981, 0.2135, 0.1917, 0.198, 0.2141, 0.2404, 0.269, 0.2993, 0.2894, 0.4638, 0.5734, 0.6686, 0.7297, 0.7301, 0.7265, 0.7229, 0.7442, 0.7726, 0.7989, 0.8228, 0.8241, 0.7202, 0.626, 0.5478, 0.4681, 0.4006, 0.3468, 0.3006, 0.2637, 0.2412, 0.2465, 0.2492, 0.2567, 0.2676, 0.2776, 0.2538, 0.3962, 0.4992, 0.5409, 0.5707, 0.6017, 0.6167, 0.6322, 0.644, 0.6566, 0.6716, 0.5777, 0.4347, 0.2435, 0.0921, 0.0619, 0.0514, 0.0446, 0.0402, 0.0351, 0.0328, 0.0355, 0.0297, 0.0249, 0.0265, 0.0302, 0.0361, 0.0422, 0.0456, 0.0473, 0.0479, 0.0479, 0.0479, 0.0479, 0.0535, 0.0731, 0.1675, 0.2986, 0.4209, 0.5126, 0.57, 0.5642, 0.2129, 0.2505, 0.2892, 0.3007, 0.31, 0.3201, 0.3342, 0.3512, 0.3219, 0.3013, 0.2951, 0.3007, 0.3025, 0.256, 0.1921, 0.1268, 0.0687, 0.0501, 0.0488, 0.0439, 0.0253, 0.0138, 0.0112, 0.0104, 0.0115, 0.1775, 0.0588, 0.0532, 0.0581, 0.0607, 0.0594, 0.0553, 0.0555, 0.0562, 0.0646, 0.0899, 0.13, 0.1573, 0.2059, 0.2265, 0.2798, 0.3202, 0.3581, 0.4071, 0.4776, 0.5019, 0.5348, 0.5974, 0.6076, 0.579, 0.5375, 0.2199, 0.381, 0.4728, 0.5873, 0.653, 0.7022, 0.7443, 0.7817, 0.8125, 0.8378, 0.8615, 0.8822, 0.8973, 0.7196, 0.5454, 0.4764, 0.4604, 0.4828, 0.5058, 0.5268, 0.528, 0.4374, 0.3965, 0.3702, 0.339, 0.2459, 0.1561, 0.1137, 0.1228, 0.1785, 0.2362, 0.2928, 0.3376, 0.3624, 0.2131, 0.2912, 0.4137, 0.505, 0.5588, 0.5919, 0.6222, 0.6632, 0.6948, 0.6917, 0.7063, 0.7232, 0.7377, 0.662, 0.2016, 0.1725, 0.1631, 0.141, 0.1117, 0.109, 0.1143, 0.1134, 0.0975, 0.0859, 0.0837, 0.0874, 0.0862, 0.0792, 0.1135, 0.2502, 0.4918, 0.6628, 0.6811, 0.6789, 0.6142, 0.26, 0.3538, 0.4911, 0.5572, 0.5958, 0.6216, 0.6445, 0.664, 0.6775, 0.6925, 0.7058, 0.7163, 0.6751, 0.5518, 0.3854, 0.3052, 0.2909, 0.2938, 0.3068, 0.3157, 0.3258, 0.3373, 0.3488, 0.3606, 0.3731, 0.3848, 0.3915, 0.3965, 0.3738, 0.3388, 0.3306, 0.3585, 0.3739, 0.3959, 0.4235, 0.4561, 0.4942, 0.5381, 0.5891, 0.6378, 0.6188, 0.4928, 0.3619, 0.3222, 0.3327, 0.354, 0.3792, 0.4029, 0.4265, 0.4517, 0.4751, 0.4793, 0.3851, 0.199, 0.3625, 0.5081, 0.6518, 0.8184, 0.799, 0.7668, 0.7489, 0.7653, 0.7872, 0.2346, 0.3647, 0.4267, 0.4858, 0.5174, 0.5479, 0.5833, 0.6308, 0.6594, 0.6731, 0.6663, 0.6681, 0.6893, 0.6259, 0.2066, 0.2359, 0.267, 0.2868, 0.3127, 0.3343, 0.3477, 0.4026, 0.4507, 0.4825, 0.5969, 0.6439, 0.6023, 0.5878, 0.2075, 0.3297, 0.4912, 0.6181, 0.6862, 0.7305, 0.761, 0.772, 0.7443, 0.6593, 0.6226, 0.5848, 0.5682, 0.532, 0.2026];</script><script>(function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.FilamentOcean=factory();})(globalThis,function(){
+'use strict';
+const HISTORY=54,MAX=3800,STEP=1/90;
+class FilamentOcean{
+ constructor(seed=Date.now()){this.seed=seed>>>0||7;this.reset();}
+ random(){this.seed=(Math.imul(this.seed,1664525)+1013904223)>>>0;return this.seed/4294967296;}
+ reset(){
+  this.clock=0;this.accumulator=0;this.tick=0;this.particles=[];this.free=Array.from({length:MAX},(_,i)=>MAX-1-i);this.history=new Float32Array(MAX*HISTORY*3);this.cursor=0;this.rings=[];
+  this.emitters=[[-13,-7,.65],[-4,-4,1.25],[6,-7,2.2],[15,-10,2.6]].map((a,i)=>({x:a[0],z:a[1],base:a[2],angle:a[2],next:i*.29,end:0,budget:0,phase:this.random()*6.28,width:4,force:1}));
+  this.stats={born:0,impacts:0,rebounds:0,packets:0};this.nextRing=0;this.manual=0;this.energy=.5;
+ }
+ begin(e,power=1){e.angle=e.base+(this.random()-.5)*1.05;e.dx=Math.cos(e.angle);e.dz=Math.sin(e.angle);e.width=3.2+this.random()*4;e.force=power*(.82+this.random()*.35);e.start=this.clock;e.end=this.clock+.55+this.random()*.95;e.next=e.end+.35+this.random()*1.25;e.phase=this.random()*6.28;e.emitX=e.x+Math.sin(this.clock*.43+e.phase)*2.4;e.emitZ=e.z+Math.cos(this.clock*.34+e.phase)*1.3;this.stats.packets++;}
+ pulse(){const e=this.emitters[1+Math.floor(this.random()*2)];this.begin(e,1.35);this.manual=1.4;}
+ kick(strength=.5){const e=this.emitters[Math.floor(this.random()*this.emitters.length)];this.begin(e,.85+Math.min(1,strength)*.4);e.end=this.clock+.22+Math.min(1,strength)*.35;e.next=e.end+.25+this.random()*.4;}
+ add(e,amplitude){
+  if(!this.free.length)return;
+  const r=this.random(),across=(this.random()-.5)*e.width,along=(this.random()-.5)*.65;
+  const x=e.emitX-e.dz*across+e.dx*along,z=e.emitZ+e.dx*across+e.dz*along;
+  const power=Math.sqrt(amplitude)*e.force;
+  const pulse=(this.clock-e.start)*2.4;
+  const forward=(3.8+Math.sin(across*.5+e.phase)*.55+Math.sin(pulse)*.6)*power;
+  const vy=(8.6+Math.sin(across*.65+e.phase)*1.05+Math.sin(pulse+e.phase)*1.6)*(.45+this.energy*.8)*power;
+  const p={slot:this.free.pop(),x,y:.025+this.random()*.045,z,vx:e.dx*forward,vz:e.dz*forward,vy,dx:e.dx,dz:e.dz,ox:e.emitX,oz:e.emitZ,phase:e.phase,roll:.76+.08*Math.sin(across*.55),seed:r,width:.45+Math.pow(r,3)*1.25,age:0,life:4.6+this.random()*.8,bounce:0,rest:-1,alpha:1,samples:1};
+  const offset=p.slot*HISTORY*3;for(let i=0;i<HISTORY;i++){this.history[offset+i*3]=p.x;this.history[offset+i*3+1]=p.y;this.history[offset+i*3+2]=p.z;}
+  this.particles.push(p);this.stats.born++;
+ }
+ update(delta,options={}){if(!Number.isFinite(delta)||delta<=0)return;this.accumulator+=Math.min(delta,.1);while(this.accumulator>=STEP){this.step(STEP,options);this.accumulator-=STEP;}}
+ step(dt,{amplitude=1,energy=.5,density=1}={}){
+  this.clock+=dt;this.tick++;this.energy=Math.max(.025,Math.min(1.4,energy));this.manual=Math.max(0,this.manual-dt);
+  for(const e of this.emitters){
+   if(this.clock>=e.next){if(this.energy>.11||this.manual>0)this.begin(e);else e.next=this.clock+.3;}
+   if(this.clock<e.end){
+    const rate=(220+this.energy*460)*(this.manual>0?1.1:1)*Math.max(0,Math.min(2.5,density));
+    e.budget+=rate*dt;
+    while(e.budget>=1){e.budget--;this.add(e,amplitude);}
+   }
+  }
+  const sample=this.tick%4===0;if(sample)this.cursor=(this.cursor+1)%HISTORY;
+  const alive=[];
+  for(const p of this.particles){
+   p.age+=dt;
+   if(p.rest>=0){p.rest+=dt;p.x+=p.vx*dt*.14;p.z+=p.vz*dt*.14;p.alpha=Math.max(0,1-p.rest/.85)*.48;}
+   else{
+    const s=(p.x-p.ox)*p.dx+(p.z-p.oz)*p.dz;
+    const a=(p.y-2.7)*p.roll*.94+Math.sin(s*.7-p.y*.55+this.clock*.35+p.phase)*1.35;
+    const cross=Math.sin(p.y*.62+s*.38+this.clock*.9+p.phase)*.9;
+    p.vx+=(p.dx*a-p.dz*cross-p.vx*.13)*dt;
+    p.vz+=(p.dz*a+p.dx*cross-p.vz*.13)*dt;
+    p.vy+=(-5.8-(s-1.3)*p.roll*.44-p.vy*.065+Math.sin(s*.65+p.y*.4+this.clock*.5+p.phase)*.85)*dt;
+    p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;
+    if(p.y<.028&&p.vy<0){
+     p.y=.028;this.stats.impacts++;p.bounce++;
+     if(p.bounce===1){p.vy=-p.vy*(.23+p.seed*.18);p.vx*=.6;p.vz*=.6;this.stats.rebounds++;if(this.clock>this.nextRing){this.rings.unshift({x:p.x,z:p.z,born:this.clock,strength:.2+p.seed*.25});this.rings.length=Math.min(3,this.rings.length);this.nextRing=this.clock+.17;}}
+     else{p.rest=0;p.vy=0;}
+    }
+    p.alpha=Math.min(1,p.age*7)*Math.min(1,Math.max(0,(p.life-p.age)*1.2));
+   }
+   if(p.age>=p.life||p.alpha<=0||Math.abs(p.x)>55||Math.abs(p.z)>65||p.y>30){this.free.push(p.slot);continue;}
+   if(sample){const k=(p.slot*HISTORY+this.cursor)*3;this.history[k]=p.x;this.history[k+1]=p.y;this.history[k+2]=p.z;p.samples=Math.min(HISTORY,p.samples+1);}
+   alive.push(p);
+  }
+  this.particles=alive;this.rings=this.rings.filter(r=>this.clock-r.born<4);
+ }
+ get stage(){if(this.manual>0)return '涌起一阵浪';if(this.energy<.13)return '潮汐渐息';return this.energy>.55?'浪群卷起':'光丝回流';}
+}
+FilamentOcean.HISTORY=HISTORY;FilamentOcean.MAX=MAX;return FilamentOcean;
+});
+</script><script>(function(root){
+'use strict';
+root.FilamentRenderer=class{
+ constructor(gl){
+  this.gl=gl;this.ext=gl.getExtension('ANGLE_instanced_arrays');if(!this.ext)throw Error('浏览器不支持粒子轨迹绘制，请开启硬件加速');
+  this.programs=[];
+  const vertex=`precision highp float;
+attribute vec2 aCorner;
+attribute vec3 aStart,aEnd;
+attribute vec4 aStyle;
+uniform mat4 uVP;
+uniform vec2 uResolution;
+uniform float uMirror,uScale,uPoints,uHeight;
+varying float vAlpha,vSide,vTint;
+void main(){
+ vec3 a=aStart,b=aEnd;a.y*=uHeight;b.y*=uHeight;if(uMirror>.5){a.y=-a.y;b.y=-b.y;}
+ vec4 pa=uVP*vec4(a,1.),pb=uVP*vec4(b,1.);
+ vec4 p=mix(pa,pb,aCorner.y);
+ float perspective=clamp(32./max(p.w,10.),.45,2.);
+ if(uPoints<.5){vec2 d=(pb.xy/pb.w-pa.xy/pa.w)*uResolution;vec2 n=normalize(vec2(-d.y,d.x)+vec2(.0001));p.xy+=n*aCorner.x*aStyle.y*uScale*perspective/uResolution*p.w;}
+ else p=pb;
+ gl_Position=p;gl_PointSize=clamp((1.45+aStyle.y*1.3)*uScale*perspective,1.,7.);
+ vAlpha=aStyle.x*(1.-smoothstep(48.,90.,p.w));vSide=aCorner.x;vTint=aStyle.z;
+}`;
+  const fragment=`precision highp float;
+uniform vec3 uColor;
+uniform float uGain,uPoints;
+varying float vAlpha,vSide,vTint;
+void main(){
+ float alpha=vAlpha;
+ if(uPoints>.5){float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;alpha*=exp(-d*d*4.5);}
+ else alpha*=1.-smoothstep(.0,1.,abs(vSide));
+ vec3 color=mix(uColor,vec3(.96,.985,1.),vTint*.55);
+ gl_FragColor=vec4(color*alpha*uGain,1.);
+}`;
+  this.fiber=this.link(vertex,fragment);this.fa={};['aCorner','aStart','aEnd','aStyle'].forEach(k=>this.fa[k]=gl.getAttribLocation(this.fiber,k));this.fu=this.uniforms(this.fiber,['VP','Resolution','Mirror','Scale','Points','Color','Gain','Height']);
+  this.quad=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,this.quad);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,0,1,0,-1,1,-1,1,1,0,1,1]),gl.STATIC_DRAW);
+  this.capacity=FilamentOcean.MAX*(FilamentOcean.HISTORY-1);this.segments=new Float32Array(this.capacity*10);this.heads=new Float32Array(FilamentOcean.MAX*10);this.segmentBuffer=gl.createBuffer();this.headBuffer=gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER,this.segmentBuffer);gl.bufferData(gl.ARRAY_BUFFER,this.segments.byteLength,gl.DYNAMIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,this.headBuffer);gl.bufferData(gl.ARRAY_BUFFER,this.heads.byteLength,gl.DYNAMIC_DRAW);
+  this.segmentCount=0;this.headCount=0;
+  const screenVertex=`attribute vec2 aPosition;varying vec2 vUV;void main(){vUV=aPosition*.5+.5;gl_Position=vec4(aPosition,0.,1.);}`;
+  const waterVertex=`precision highp float;attribute vec2 aPosition;uniform mat4 uVP;varying vec2 vWorld;varying vec4 vClip;void main(){vWorld=aPosition;vClip=uVP*vec4(aPosition.x,0.,aPosition.y,1.);gl_Position=vClip;}`;
+  const waterFragment=`precision highp float;
+uniform sampler2D uImage;
+uniform vec3 uEye,uColor;
+uniform vec2 uTexel,uPointer;
+uniform vec4 uRings[3];
+uniform float uTime,uRipples,uReflection;
+varying vec2 vWorld;varying vec4 vClip;
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+1.),f.x),f.y);}
+float height(vec2 p){
+ float t=uTime;float h=sin(p.x*.8+p.y*2.4+t*.7)*.017+sin(p.x*1.8-p.y*4.3-t*.8)*.008;
+ h+=(noise(p*vec2(2.2,5.1)+vec2(t*.15,-t*.25))-.5)*.015;
+ float d=distance(p,uPointer);h+=sin(d*4.-t*4.)*exp(-d*.44)*.045;
+ for(int i=0;i<3;i++){vec4 r=uRings[i];float d=distance(p,r.xy);float front=d-r.z*3.1;h+=sin(d*6.-r.z*13.)*exp(-front*front*.4-r.z*.8)*r.w*.07;}
+ return h*uRipples;
+}
+void main(){
+ vec2 p=vWorld;float h=height(p),e=.045;
+ vec2 slope=vec2(height(p+vec2(e,0.))-h,height(p+vec2(0.,e))-h)/e;
+ vec3 n=normalize(vec3(-slope.x,1.,-slope.y));vec3 eye=normalize(uEye-vec3(p.x,0.,p.y));
+ float fresnel=.20+.8*pow(1.-max(0.,dot(n,eye)),3.);
+ vec2 uv=vClip.xy/vClip.w*.5+.5;
+ vec2 shift=vec2(slope.x*.022,slope.y*.017)*clamp(30./vClip.w,.4,2.);
+ uv+=shift;
+ vec2 blur=uTexel*vec2(4.+abs(slope.y)*28.,.8);
+ vec3 reflection=texture2D(uImage,clamp(uv,.001,.999)).rgb*.5+texture2D(uImage,clamp(uv+blur,.001,.999)).rgb*.25+texture2D(uImage,clamp(uv-blur,.001,.999)).rgb*.25;
+ reflection*=uReflection*(.3+.8*fresnel*fresnel);
+ float attenuation=1.-smoothstep(40.,100.,length(uEye-vec3(p.x,0.,p.y)));
+ gl_FragColor=vec4((reflection+vec3(.0002,.0006,.0011))*attenuation,1.);
+}`;
+  this.water=this.link(waterVertex,waterFragment);this.wa=gl.getAttribLocation(this.water,'aPosition');this.wu=this.uniforms(this.water,['VP','Image','Eye','Color','Texel','Pointer','Time','Ripples','Reflection']);this.wu.Rings=gl.getUniformLocation(this.water,'uRings[0]');
+  this.plane=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,this.plane);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-100,-85,100,-85,-100,35,-100,35,100,-85,100,35]),gl.STATIC_DRAW);
+  const blurFragment=`precision highp float;uniform sampler2D uImage;uniform vec2 uStep;varying vec2 vUV;void main(){vec3 c=texture2D(uImage,vUV).rgb*.227027;c+=texture2D(uImage,vUV+uStep*1.384615).rgb*.316216;c+=texture2D(uImage,vUV-uStep*1.384615).rgb*.316216;c+=texture2D(uImage,vUV+uStep*3.230769).rgb*.07027;c+=texture2D(uImage,vUV-uStep*3.230769).rgb*.07027;gl_FragColor=vec4(c,1.);}`;
+  this.blur=this.link(screenVertex,blurFragment);this.ba=gl.getAttribLocation(this.blur,'aPosition');this.bu=this.uniforms(this.blur,['Image','Step']);
+  const finalFragment=`precision highp float;uniform sampler2D uImage,uBloom;uniform float uGlow;varying vec2 vUV;void main(){vec3 c=texture2D(uImage,vUV).rgb;vec3 b=texture2D(uBloom,vUV).rgb;c=c+b*uGlow*.92;c=pow(max(c,vec3(0.)),vec3(.92));gl_FragColor=vec4(c,1.);}`;
+  this.finish=this.link(screenVertex,finalFragment);this.ca=gl.getAttribLocation(this.finish,'aPosition');this.cu=this.uniforms(this.finish,['Image','Bloom','Glow']);
+  this.screen=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,this.screen);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
+  this.targets={mirror:this.target(),scene:this.target(),blurA:this.target(),blurB:this.target()};gl.disable(gl.DEPTH_TEST);gl.blendFunc(gl.ONE,gl.ONE);
+ }
+ link(v,f){const gl=this.gl,p=gl.createProgram();for(const [type,src] of [[gl.VERTEX_SHADER,v],[gl.FRAGMENT_SHADER,f]]){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));gl.attachShader(p,s);}gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(p));return p;}
+ uniforms(p,names){const o={};names.forEach(n=>o[n]=this.gl.getUniformLocation(p,'u'+n));return o;}
+ target(){const gl=this.gl,t={texture:gl.createTexture(),fbo:gl.createFramebuffer()};gl.bindTexture(gl.TEXTURE_2D,t.texture);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return t;}
+ sizeTarget(t,w,h){const gl=this.gl;t.width=w;t.height=h;gl.bindTexture(gl.TEXTURE_2D,t.texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);gl.bindFramebuffer(gl.FRAMEBUFFER,t.fbo);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t.texture,0);if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('无法创建反射画面');}
+ resize(w,h){this.width=w;this.height=h;this.sizeTarget(this.targets.scene,w,h);const s=Math.min(1,1600/w);this.sizeTarget(this.targets.mirror,Math.max(1,Math.round(w*s)),Math.max(1,Math.round(h*s)));for(const k of ['blurA','blurB'])this.sizeTarget(this.targets[k],Math.max(1,Math.round(w/4)),Math.max(1,Math.round(h/4)));this.gl.bindFramebuffer(this.gl.FRAMEBUFFER,null);}
+ upload(ocean,length,visibility=1){
+  const h=ocean.history,N=FilamentOcean.HISTORY;let k=0,head=0;const maxAge=Math.max(2,Math.round((N-1)*length));
+  for(const p of ocean.particles){
+   // Stable selection adds/removes complete filaments without changing their opacity.
+   if((p.seed*73.739)%1>=visibility)continue;
+   const i=head*10;this.heads[i]=p.x;this.heads[i+1]=p.y;this.heads[i+2]=p.z;this.heads[i+3]=p.x;this.heads[i+4]=p.y;this.heads[i+5]=p.z;this.heads[i+6]=p.alpha*(p.rest<0?1.1:.15);this.heads[i+7]=p.width;this.heads[i+8]=.5+p.seed*.5;this.heads[i+9]=0;head++;
+   if(length<.01)continue;
+   const count=Math.min(maxAge,p.samples-1),base=p.slot*N*3;
+   let ax=p.x,ay=p.y,az=p.z;
+   for(let j=0;j<count;j++){
+    const index=base+((ocean.cursor-j+N)%N)*3;
+    const bx=h[index],by=h[index+1],bz=h[index+2];
+    if(Math.abs(ax-bx)+Math.abs(ay-by)+Math.abs(az-bz)>.0002){
+     const fade=Math.pow(1-j/(count+1),1.25),wave=.78+.22*Math.sin(j*.39+p.seed*21.+ocean.clock*.6);
+     this.segments[k++]=bx;this.segments[k++]=by;this.segments[k++]=bz;this.segments[k++]=ax;this.segments[k++]=ay;this.segments[k++]=az;
+     this.segments[k++]=p.alpha*fade*(.42+p.seed*.42);this.segments[k++]=p.width*(.25+.75*fade)*wave;this.segments[k++]=.2+p.seed*.6;this.segments[k++]=0;
+    }
+    ax=bx;ay=by;az=bz;
+   }
+  }
+  this.segmentCount=k/10;this.headCount=head;const gl=this.gl;
+  gl.bindBuffer(gl.ARRAY_BUFFER,this.segmentBuffer);if(k)gl.bufferSubData(gl.ARRAY_BUFFER,0,this.segments.subarray(0,k));gl.bindBuffer(gl.ARRAY_BUFFER,this.headBuffer);if(head)gl.bufferSubData(gl.ARRAY_BUFFER,0,this.heads.subarray(0,head*10));
+ }
+ disable(){const gl=this.gl;for(let i=0;i<8;i++){gl.disableVertexAttribArray(i);this.ext.vertexAttribDivisorANGLE(i,0);}}
+ drawFibers(vp,mirror,w,h,scale,color,gain,height=1){
+  const gl=this.gl,a=this.fa,u=this.fu;this.disable();gl.useProgram(this.fiber);gl.enable(gl.BLEND);gl.uniformMatrix4fv(u.VP,false,vp);gl.uniform2f(u.Resolution,w,h);gl.uniform1f(u.Mirror,mirror);gl.uniform1f(u.Scale,scale);gl.uniform3fv(u.Color,color);gl.uniform1f(u.Gain,gain);
+  gl.uniform1f(u.Height,height);gl.bindBuffer(gl.ARRAY_BUFFER,this.quad);gl.enableVertexAttribArray(a.aCorner);gl.vertexAttribPointer(a.aCorner,2,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ARRAY_BUFFER,this.segmentBuffer);for(const [key,size,offset] of [['aStart',3,0],['aEnd',3,12],['aStyle',4,24]]){const loc=a[key];gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,size,gl.FLOAT,false,40,offset);this.ext.vertexAttribDivisorANGLE(loc,1);}
+  gl.uniform1f(u.Points,0);if(this.segmentCount)this.ext.drawArraysInstancedANGLE(gl.TRIANGLES,0,6,this.segmentCount);
+  this.disable();gl.disableVertexAttribArray(a.aCorner);gl.vertexAttrib2f(a.aCorner,0,1);gl.bindBuffer(gl.ARRAY_BUFFER,this.headBuffer);for(const [key,size,offset] of [['aStart',3,0],['aEnd',3,12],['aStyle',4,24]]){const loc=a[key];gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,size,gl.FLOAT,false,40,offset);}
+  gl.uniform1f(u.Points,1);if(this.headCount)gl.drawArrays(gl.POINTS,0,this.headCount);this.disable();
+ }
+ bind(t){const gl=this.gl;gl.bindFramebuffer(gl.FRAMEBUFFER,t?t.fbo:null);gl.viewport(0,0,t?t.width:this.width,t?t.height:this.height);}
+ screenPass(program,loc){const gl=this.gl;this.disable();gl.useProgram(program);gl.disable(gl.BLEND);gl.bindBuffer(gl.ARRAY_BUFFER,this.screen);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);}
+ render(vp,eye,params,ocean,pointer,color,drive,dpr){
+  const gl=this.gl,t=this.targets,gain=2.6*params.glow,height=params.heightScale??1;
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,null);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,null);gl.activeTexture(gl.TEXTURE0);
+  this.bind(t.mirror);gl.clearColor(0,0,0,1);gl.clear(gl.COLOR_BUFFER_BIT);if(params.reflection)this.drawFibers(vp,1,t.mirror.width,t.mirror.height,dpr*t.mirror.width/this.width,color,gain,height);
+  this.bind(t.scene);gl.clear(gl.COLOR_BUFFER_BIT);this.disable();gl.useProgram(this.water);gl.disable(gl.BLEND);gl.bindBuffer(gl.ARRAY_BUFFER,this.plane);gl.enableVertexAttribArray(this.wa);gl.vertexAttribPointer(this.wa,2,gl.FLOAT,false,0,0);
+  const u=this.wu;gl.uniformMatrix4fv(u.VP,false,vp);gl.uniform3fv(u.Eye,eye);gl.uniform3fv(u.Color,color);gl.uniform2f(u.Texel,1/t.mirror.width,1/t.mirror.height);gl.uniform2fv(u.Pointer,pointer);gl.uniform1f(u.Time,ocean.clock);gl.uniform1f(u.Ripples,params.ripples);gl.uniform1f(u.Reflection,params.reflection?params.reflectivity:0);
+  const rings=new Float32Array(12);for(let i=0;i<3;i++){const r=ocean.rings[i];rings.set(r?[r.x,r.z,ocean.clock-r.born,r.strength]:[80,80,100,0],i*4);}gl.uniform4fv(u.Rings,rings);gl.bindTexture(gl.TEXTURE_2D,t.mirror.texture);gl.uniform1i(u.Image,0);gl.drawArrays(gl.TRIANGLES,0,6);
+  this.drawFibers(vp,0,this.width,this.height,dpr,color,gain,height);
+  this.bind(t.blurA);this.screenPass(this.blur,this.ba);gl.bindTexture(gl.TEXTURE_2D,t.scene.texture);gl.uniform1i(this.bu.Image,0);gl.uniform2f(this.bu.Step,1/t.blurA.width,0);gl.drawArrays(gl.TRIANGLES,0,6);
+  this.bind(t.blurB);this.screenPass(this.blur,this.ba);gl.bindTexture(gl.TEXTURE_2D,t.blurA.texture);gl.uniform2f(this.bu.Step,0,1/t.blurB.height);gl.drawArrays(gl.TRIANGLES,0,6);
+  this.bind(null);this.screenPass(this.finish,this.ca);gl.bindTexture(gl.TEXTURE_2D,t.scene.texture);gl.uniform1i(this.cu.Image,0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,t.blurB.texture);gl.uniform1i(this.cu.Bloom,1);gl.uniform1f(this.cu.Glow,params.glow);gl.drawArrays(gl.TRIANGLES,0,6);gl.activeTexture(gl.TEXTURE0);this.disable();
+ }
+};
+})(globalThis);
+</script><script>(function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else Object.assign(root,factory());})(globalThis,function(){
+'use strict';
+class OceanAudioFeatures{
+ constructor(){this.reset();this.gain=1.25;}
+ reset(){this.peak=.045;this.fluxMean=.008;this.previous=null;this.cooldown=0;this.pulse=0;this.smoothEnergy=0;this.silentFor=0;}
+ process(wave,bins,sampleRate,dt){
+  dt=Math.max(.001,Math.min(dt,.15));let squares=0;for(const x of wave)squares+=x*x;const rms=Math.sqrt(squares/Math.max(1,wave.length));
+  this.peak=Math.max(.035,rms,this.peak*Math.exp(-dt*.65));
+  const band=(lo,hi)=>{const start=Math.max(1,Math.floor(lo/(sampleRate/(bins.length*2)))),end=Math.min(bins.length,Math.ceil(hi/(sampleRate/(bins.length*2))));let total=0;for(let i=start;i<end;i++)total+=bins[i]/255;return total/Math.max(1,end-start);};
+  const audible=rms>.0013,bass=audible?band(45,240):0,treble=audible?band(2000,8000):0;
+  const binHz=sampleRate/(bins.length*2),limit=Math.min(bins.length,Math.ceil(2000/binHz));let flux=0,weight=0;
+  for(let i=1;i<limit;i++){const w=i*binHz<280?2:1;weight+=w;if(this.previous)flux+=Math.max(0,bins[i]-this.previous[i])/255*w;}
+  flux/=Math.max(1,weight);if(!this.previous||this.previous.length!==bins.length)this.previous=new Uint8Array(bins.length);this.previous.set(bins);
+  this.cooldown=Math.max(0,this.cooldown-dt);
+  const onset=audible&&this.cooldown===0&&flux>Math.max(.022,this.fluxMean*1.65)&&bass>.14;
+  this.fluxMean+=(flux-this.fluxMean)*(1-Math.exp(-dt*1.8));
+  this.pulse*=Math.exp(-dt*7.5);if(onset){this.pulse=1;this.cooldown=.19;}
+  this.silentFor=audible?0:this.silentFor+dt;
+  const loudness=audible?Math.min(1.1,rms/Math.max(.035,this.peak*.92)):0;
+  const target=audible?Math.min(1.3,(loudness*.55+bass*.28+this.pulse*.32)*this.gain):0;
+  this.smoothEnergy+=(target-this.smoothEnergy)*(1-Math.exp(-dt*(target>this.smoothEnergy?16:6)));
+  return {energy:this.smoothEnergy,bass,treble,loudness,beat:this.pulse,onset,rms,silentFor:this.silentFor,level:Math.min(1,rms/Math.max(.035,this.peak))};
+ }
+}
+class OceanAudioInput{
+ constructor(options={}){this.env=options.env||globalThis;this.onState=options.onState||(()=>{});this.features=new OceanAudioFeatures();this.mode='demo';this.connecting=false;this.request=0;this.context=null;this.source=null;this.analyser=null;this.stream=null;this.element=null;this.url=null;this.label='参考节奏';this.error='';this.endedHandler=null;}
+ get active(){return this.mode==='system'||this.mode==='file';}
+ get supportsSystem(){return !!this.env.navigator?.mediaDevices?.getDisplayMedia;}
+ notify(extra={}){this.onState({mode:this.mode,connecting:this.connecting,label:this.label,error:this.error,paused:!!this.element?.paused,...extra});}
+ ensureContext(){if(!this.context){const Context=this.env.AudioContext||this.env.webkitAudioContext;if(!Context)throw Error('当前浏览器不支持音频分析，请用 Chrome 或 Edge 打开');this.context=new Context();}return this.context;}
+ makeAnalyser(){const a=this.context.createAnalyser();a.fftSize=2048;a.smoothingTimeConstant=.38;a.minDecibels=-85;a.maxDecibels=-12;return a;}
+ release(){
+  if(this.source)this.source.disconnect();if(this.analyser)this.analyser.disconnect();
+  if(this.stream){for(const track of this.stream.getTracks()){if(this.endedHandler)track.removeEventListener('ended',this.endedHandler);track.stop();}}
+  if(this.element){this.element.pause();this.element.src='';}if(this.url)this.env.URL.revokeObjectURL(this.url);
+  this.source=null;this.analyser=null;this.stream=null;this.element=null;this.url=null;this.endedHandler=null;this.features.reset();
+ }
+ stop(){this.request++;this.release();this.mode='demo';this.connecting=false;this.label='参考节奏';this.error='';this.notify();}
+ async connectSystem(){
+  if(this.connecting)return false;
+  if(!this.supportsSystem){this.error='当前浏览器无法读取系统声音。请复制网页链接，在桌面版 Chrome 或 Edge 中打开。';this.notify();return false;}
+  const request=++this.request;this.connecting=true;this.error='';this.notify();let stream=null;
+  try{
+   const ctx=this.ensureContext();const resume=ctx.resume().then(()=>null,error=>error);
+   // Start the picker in the same user gesture, before awaiting any promises.
+   const capture=this.env.navigator.mediaDevices.getDisplayMedia({video:{displaySurface:'monitor',frameRate:1},audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,suppressLocalAudioPlayback:false},systemAudio:'include',windowAudio:'system',selfBrowserSurface:'exclude',surfaceSwitching:'exclude',monitorTypeSurfaces:'include'});
+   stream=await capture;const resumeError=await resume;if(resumeError)throw resumeError;
+   if(request!==this.request){stream.getTracks().forEach(t=>t.stop());return false;}
+   const tracks=stream.getAudioTracks().filter(t=>t.readyState!=='ended');
+   if(!tracks.length){const error=Error('没有收到声音轨道。请重新连接，在弹窗选择“整个屏幕”并勾选“共享系统音频”。');error.code='no-audio';throw error;}
+   const audioStream=new this.env.MediaStream(tracks),source=ctx.createMediaStreamSource(audioStream),analyser=this.makeAnalyser();source.connect(analyser);
+   // Keep only system audio; never render or retain a screen-video stream.
+   stream.getVideoTracks().forEach(t=>t.stop());
+   this.release();this.source=source;this.analyser=analyser;this.stream=stream;this.mode='system';this.label='电脑正在播放的音乐';this.error='';this.setupBuffers();
+   this.endedHandler=()=>{if(this.mode!=='system'||this.stream!==stream)return;this.stop();this.notify({notice:'声音共享已结束，已恢复参考节奏。'});};
+   tracks.forEach(t=>t.addEventListener('ended',this.endedHandler));
+   if(tracks.every(t=>t.readyState==='ended'))throw Error('浏览器结束了音频共享，请用桌面版 Chrome 或 Edge 重新连接。');
+   return true;
+  }catch(error){
+   if(stream&&stream!==this.stream)stream.getTracks().forEach(t=>t.stop());
+   if(stream===this.stream){this.release();this.mode='demo';this.label='参考节奏';}
+   if(request===this.request){this.error=error.code==='no-audio'?error.message:error.name==='NotAllowedError'?'未完成声音授权。可再次点击连接，选择“整个屏幕”并打开系统音频。':error.name==='NotReadableError'?'浏览器暂时无法读取电脑声音。请在 Chrome 或 Edge 中重试，并确认音乐软件正在播放。':error.name==='InvalidStateError'?'请在当前可见页面中点击“跟随电脑音乐”，再选择声音来源。':error.message||'连接未成功，请重试。';}
+   return false;
+  }finally{if(request===this.request){this.connecting=false;this.notify();}}
+ }
+ async connectFile(file){
+  const request=++this.request;let element=null,url=null,source=null,analyser=null;
+  try{
+   const ctx=this.ensureContext();await ctx.resume();url=this.env.URL.createObjectURL(file);element=new this.env.Audio(url);element.loop=true;
+   source=ctx.createMediaElementSource(element);analyser=this.makeAnalyser();source.connect(analyser);source.connect(ctx.destination);await element.play();
+   if(request!==this.request){element.pause();source.disconnect();analyser.disconnect();this.env.URL.revokeObjectURL(url);return false;}
+   this.release();this.element=element;this.url=url;this.source=source;this.analyser=analyser;this.mode='file';this.label=file.name;this.error='';this.connecting=false;this.setupBuffers();
+   element.addEventListener('error',()=>{if(this.element===element){this.stop();this.error='无法播放此音频，请尝试 MP3 或 WAV。';this.notify();}});this.notify();return true;
+  }catch(error){if(element){element.pause();element.src='';}if(source)source.disconnect();if(analyser)analyser.disconnect();if(url)this.env.URL.revokeObjectURL(url);this.connecting=false;this.error='音频未能播放，请尝试 MP3 或 WAV。';this.notify();return false;}
+ }
+ setupBuffers(){this.wave=new Float32Array(this.analyser.fftSize);this.bins=new Uint8Array(this.analyser.frequencyBinCount);this.features.reset();}
+ async toggleFile(){if(!this.element)return;try{if(this.element.paused){await this.context.resume();await this.element.play();}else this.element.pause();this.notify();}catch{this.error='音乐播放失败，请重新选择文件。';this.notify();}}
+ read(dt){
+  if(!this.active||!this.analyser)return null;
+  const muted=this.mode==='file'?this.element.paused:this.stream.getAudioTracks().every(t=>t.muted||t.readyState==='ended');
+  if(muted||this.context.state==='suspended'){this.wave.fill(0);this.bins.fill(0);}else{this.analyser.getFloatTimeDomainData(this.wave);this.analyser.getByteFrequencyData(this.bins);}
+  return this.features.process(this.wave,this.bins,this.context.sampleRate,dt);
+ }
+}
+return {OceanAudioFeatures,OceanAudioInput};
+});
+</script><script>(function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.OceanMusicMotion=factory();})(globalThis,function(){
+'use strict';
+const clamp=(v,max=1)=>Math.max(0,Math.min(max,Number.isFinite(v)?v:0));
+class OceanMusicMotion{
+ constructor(){this.reset();}
+ reset(){this.state={speed:1,trail:1,density:1};}
+ update(features,base,dt){
+  const level=clamp(features.energy/1.05),high=clamp(features.treble),beat=clamp(features.beat);
+  const target={speed:.28+level*.95+beat*.45,trail:.16+level*.75+high*.24+beat*.25,density:.12+level*1.2+beat*.65};
+  for(const key of Object.keys(target)){
+   const tau=target[key]>this.state[key]?(key==='density'?.13:.09):(key==='density'?.48:.34);
+   this.state[key]+=(target[key]-this.state[key])*(1-Math.exp(-Math.min(.1,Math.max(0,dt))/tau));
+  }
+  // Keep launch energy and vertical scale independent of the incoming music.
+  return {...base,heightScale:1,waveEnergy:.65,speed:base.speed*this.state.speed,trail:clamp(base.trail*this.state.trail),density:clamp(base.density*this.state.density,2.5),fixedBrightness:true};
+ }
+}
+return OceanMusicMotion;
+});
+</script><script>(() => {
+'use strict';
+const $=id=>document.getElementById(id),canvas=$('ocean');
+const gl=canvas.getContext('webgl',{alpha:false,antialias:false,preserveDrawingBuffer:true,powerPreference:'high-performance'});
+if(!gl){$('failure').hidden=false;return;}
+let renderer;try{renderer=new FilamentRenderer(gl);}catch(e){$('failure').hidden=false;$('failure').textContent='画面启动失败：'+e.message;return;}
+const ocean=new FilamentOcean();
+const params={amplitude:1,speed:1,trail:.92,density:1,glow:1.2,ripples:.8,reflectivity:1.25,reflection:true};
+let color=[.42,.69,.91],mode='silver',paused=false,last=performance.now(),frames=0,lastFps=last;
+let width=1,height=1,dpr=1,yaw=0,targetYaw=0,pitch=.08,targetPitch=.08,zoom=31,targetZoom=31,pointer=[80,80],screenPointer=null;
+const audioInput=new OceanAudioInput({onState:audioState});
+const musicMotion=new OceanMusicMotion();
+let liveParams=params;
+let lastMeter=0,silenceShown=false;
+function rhythm(t){const values=REFERENCE_RHYTHM,n=values.length;const x=(t*10)%n,i=Math.floor(x),f=x-i;return values[i]*(1-f)+values[(i+1)%n]*f;}
+for(let i=0;i<216;i++)ocean.update(1/90,{amplitude:1,energy:rhythm(ocean.clock)});
+function resize(){width=innerWidth;height=innerHeight;dpr=Math.min(devicePixelRatio||1,1.5);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);try{renderer.resize(canvas.width,canvas.height);}catch(e){$('failure').hidden=false;$('failure').textContent=e.message;}}
+addEventListener('resize',resize);resize();
+function normalize(v){const l=Math.hypot(...v);return v.map(x=>x/l);}
+function cross(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];}
+function perspective(fov,aspect){const f=1/Math.tan(fov/2),near=.1,far=160,nf=1/(near-far);return [f/aspect,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0];}
+function lookAt(eye,target){const z=normalize(eye.map((v,i)=>v-target[i])),x=normalize(cross([0,1,0],z)),y=cross(z,x),dot=a=>-a.reduce((s,v,i)=>s+v*eye[i],0);return [x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,dot(x),dot(y),dot(z),1];}
+function multiply(a,b){const c=new Float32Array(16);for(let j=0;j<4;j++)for(let i=0;i<4;i++)for(let k=0;k<4;k++)c[j*4+i]+=a[k*4+i]*b[j*4+k];return c;}
+function camera(){const fit=Math.max(1,1.5/(width/height)),z=zoom*fit;return [Math.sin(yaw)*z,0.3+Math.sin(pitch)*zoom,Math.cos(yaw)*z];}
+function hit(px,py,eye){const f=normalize([-eye[0],5.4-eye[1],-6-eye[2]]),r=normalize(cross(f,[0,1,0])),u=cross(r,f),rx=(px/width*2-1)*width/height*Math.tan(.33),ry=(1-py/height*2)*Math.tan(.33),ray=normalize(f.map((v,i)=>v+r[i]*rx+u[i]*ry));if(ray[1]>-.02)return [80,80];const d=-eye[1]/ray[1];return [eye[0]+ray[0]*d,eye[2]+ray[2]*d];}
+function animate(now){
+ const dt=Math.min((now-last)/1000,.05);last=now;
+ const features=audioInput.read(dt);
+ let drive=features?features.energy:rhythm(ocean.clock);
+ if(!features){if(mode==='storm')drive=Math.max(.55,drive*1.3);if(mode==='dream')drive*=.65;}
+ if(ocean.manual>0)drive=Math.max(drive,.7);
+ if(!paused)liveParams=features?musicMotion.update(features,params,dt):params;
+ if(!paused){if(features?.onset)ocean.kick();ocean.update(dt*liveParams.speed,{amplitude:liveParams.amplitude,energy:liveParams.waveEnergy??drive,density:liveParams.density});}
+ yaw+=(targetYaw-yaw)*.07;pitch+=(targetPitch-pitch)*.07;zoom+=(targetZoom-zoom)*.07;
+ const eye=camera(),vp=multiply(perspective(.66,width/height),lookAt(eye,[0,5.4,-6]));if(screenPointer)pointer=hit(screenPointer[0],screenPointer[1],eye);
+ renderer.upload(ocean,liveParams.trail,features?Math.min(1,.18+liveParams.density*.68):1);renderer.render(vp,eye,liveParams,ocean,pointer,color,drive,dpr);
+ if(features&&now-lastMeter>90){lastMeter=now;const level=Math.round(features.level*100);$('audio-meter').setAttribute('aria-valuenow',String(level));$('audio-meter-fill').style.transform='scaleX('+features.level+')';$('audio-dock').style.setProperty('--beat',features.beat);const silent=features.silentFor>2.5;if(silent!==silenceShown){silenceShown=silent;$('audio-status').textContent=audioInput.element?.paused?'音乐已暂停':silent?'未检测到声音：检查播放与共享音频选项':'音乐驱动流速 · 丝长 · 密度';}}
+ if(now-lastFps>700){$('fps').textContent=Math.round(++frames*1000/(now-lastFps))+' fps';$('particle-count').textContent=renderer.headCount.toLocaleString()+' 条流光';$('splash-status').textContent=ocean.stage;frames=0;lastFps=now;}else frames++;
+ requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
+let dragging=false,origin;
+canvas.addEventListener('pointerdown',e=>{dragging=true;origin=[e.clientX,e.clientY,targetYaw,targetPitch];canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener('pointermove',e=>{screenPointer=[e.clientX,e.clientY];if(dragging){targetYaw=origin[2]-(e.clientX-origin[0])*.003;targetPitch=Math.max(.035,Math.min(.4,origin[3]+(e.clientY-origin[1])*.0015));}});
+canvas.addEventListener('pointerup',e=>{if(origin&&Math.hypot(e.clientX-origin[0],e.clientY-origin[1])<7){const p=hit(e.clientX,e.clientY,camera());ocean.rings.unshift({x:p[0],z:p[1],born:ocean.clock,strength:1});ocean.rings.length=Math.min(3,ocean.rings.length);}dragging=false;});
+canvas.addEventListener('pointercancel',()=>dragging=false);canvas.addEventListener('pointerleave',()=>{screenPointer=null;pointer=[80,80];});
+canvas.addEventListener('wheel',e=>{e.preventDefault();targetZoom=Math.max(23,Math.min(52,targetZoom+e.deltaY*.018));},{passive:false});
+const keys=['amplitude','speed','trail','density','glow','ripples','reflectivity'];
+function range(key){const el=$(key);el.value=params[key];$(key+'-out').textContent=params[key].toFixed(2);el.style.setProperty('--fill',((params[key]-Number(el.min))/(Number(el.max)-Number(el.min))*100)+'%');}
+keys.forEach(k=>{range(k);$(k).addEventListener('input',e=>{params[k]=+e.target.value;range(k);document.querySelectorAll('.preset').forEach(b=>b.classList.remove('active'));});});
+const presets={silver:{amplitude:1,speed:1,trail:.92,density:1,glow:1.2,ripples:.8,reflectivity:1.25,color:[.42,.69,.91]},storm:{amplitude:1.3,speed:1.1,trail:1,density:1.25,glow:1.35,ripples:1.1,reflectivity:1.3,color:[.52,.72,.92]},dream:{amplitude:.75,speed:.65,trail:1,density:.75,glow:1.1,ripples:.5,reflectivity:1.1,color:[.23,.49,.8]}};
+function preset(name){mode=name;Object.assign(params,presets[name]);color=presets[name].color;keys.forEach(range);document.querySelectorAll('.preset').forEach(b=>b.classList.toggle('active',b.dataset.preset===name));}
+document.querySelectorAll('.preset').forEach(b=>b.addEventListener('click',()=>preset(b.dataset.preset)));
+$('reflection').addEventListener('change',e=>params.reflection=e.target.checked);
+function pause(){paused=!paused;$('pause-icon').textContent=paused?'▶':'Ⅱ';$('pause-text').textContent=paused?'继续':'暂停';$('pause').setAttribute('aria-label',paused?'继续海浪':'暂停海浪');$('state').textContent=paused?'时间已暂停':audioInput.mode==='system'?'系统音乐驱动':audioInput.mode==='file'?'本地音乐驱动':'实时演算中';}
+$('pause').addEventListener('click',pause);
+$('splash-trigger').addEventListener('click',()=>{ocean.pulse();if(paused)pause();});
+let timeout;function toast(text){$('toast').textContent=text;$('toast').classList.add('visible');clearTimeout(timeout);timeout=setTimeout(()=>$('toast').classList.remove('visible'),2300);}
+$('reset').addEventListener('click',()=>{preset('silver');ocean.reset();for(let i=0;i<216;i++)ocean.update(1/90,{amplitude:1,energy:rhythm(ocean.clock)});params.reflection=true;$('reflection').checked=true;targetYaw=0;targetPitch=.08;targetZoom=31;pointer=[80,80];screenPointer=null;toast('已恢复参考节奏');});
+function chromeState(hidden){document.querySelectorAll('.chrome').forEach(el=>el.inert=hidden);$('show').hidden=!hidden;}
+function immersive(){const hidden=document.body.classList.toggle('immersive');chromeState(hidden);}
+chromeState(document.body.classList.contains('immersive'));
+$('hide').addEventListener('click',immersive);$('show').addEventListener('click',immersive);
+async function fullscreen(){try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{toast('当前窗口不支持全屏，可按 H 隐藏控制面板');}}
+$('fullscreen').addEventListener('click',fullscreen);
+addEventListener('keydown',e=>{if(['INPUT','BUTTON'].includes(e.target.tagName))return;if(e.code==='Space'){e.preventDefault();pause();}if(e.key.toLowerCase()==='h')immersive();if(e.key.toLowerCase()==='f')fullscreen();});
+$('snapshot').addEventListener('click',()=>canvas.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='银潮-参考重制-'+new Date().toISOString().replace(/[:.]/g,'-')+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);toast('已保存纯净海浪画面');},'image/png'));
+function audioState(state){
+ const system=state.mode==='system',active=state.mode!=='demo';silenceShown=false;
+ $('system-audio').disabled=state.connecting;$('system-audio').textContent=state.connecting?'选择声音来源…':system?'■ 停止跟随':'♫ 跟随电脑音乐';$('audio-dock').classList.toggle('connected',system);
+ $('audio-name').firstChild.textContent=active?state.label:'让海浪跟随音乐';$('audio-status').textContent=state.mode==='demo'?'默认跟随参考视频的强弱节奏':state.paused?'音乐已暂停':'音乐驱动流速 · 丝长 · 密度';
+ $('audio-actions').hidden=!active;$('audio-toggle').hidden=state.mode!=='file';$('audio-toggle').textContent=state.paused?'播放音乐':'暂停音乐';$('audio-clear').textContent=system?'断开系统音乐':'移除';$('audio-meter').hidden=!active;$('audio-gain-controls').hidden=!active;
+ if(!active){$('audio-file').value='';$('audio-meter-fill').style.transform='scaleX(0)';$('audio-dock').style.setProperty('--beat',0);}
+ if(!paused)$('state').textContent=system?'系统音乐驱动':state.mode==='file'?'本地音乐驱动':'实时演算中';
+ if(state.error){$('audio-help-message').textContent=state.error;$('audio-help').hidden=false;}
+ else $('audio-help-message').textContent='声音仅在本机分析。连接成功后立即停止画面轨道，只分析音频。';
+ if(state.notice)toast(state.notice);
+}
+$('system-audio').addEventListener('click',async()=>{if(audioInput.mode==='system'){audioInput.stop();return;}const connected=await audioInput.connectSystem();if(connected){$('audio-help').hidden=true;if(paused)pause();toast('已连接电脑声音，海浪正在跟随音乐');}});
+$('audio-file').addEventListener('change',async e=>{const file=e.target.files[0];if(file)await audioInput.connectFile(file);});
+$('audio-toggle').addEventListener('click',()=>audioInput.toggleFile());$('audio-clear').addEventListener('click',()=>audioInput.stop());
+$('audio-help-toggle').addEventListener('click',()=>{$('audio-help').hidden=!$('audio-help').hidden;});$('audio-help-close').addEventListener('click',()=>$('audio-help').hidden=true);
+$('copy-audio-link').addEventListener('click',async()=>{const url=location.protocol==='https:'?location.href:'https://silver-particle-tide-20261023.zhangzhenhao20.chatgpt.site/';try{await navigator.clipboard.writeText(url);toast('链接已复制，请粘贴到 Chrome 或 Edge 地址栏');}catch{$('audio-page-link').hidden=false;$('audio-page-link').value=url;$('audio-page-link').focus();$('audio-page-link').select();}});
+function gainRange(){const el=$('audio-gain');audioInput.features.gain=+el.value;$('audio-gain-out').textContent=(+el.value).toFixed(2);el.style.setProperty('--fill',((+el.value-.5)/2.5*100)+'%');}gainRange();$('audio-gain').addEventListener('input',gainRange);
+document.querySelector('.upload').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('audio-file').click();}});
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();$('failure').hidden=false;$('failure').textContent='图形渲染已中断，请刷新页面恢复。';});
+addEventListener('pagehide',()=>audioInput.stop());
+})();
+</script>
+</body></html>

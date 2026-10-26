@@ -1,0 +1,13 @@
+{
+  "name": "silver-particle-tide",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Audio-reactive WebGL filament ocean and native Rive adaptation",
+  "scripts": {
+    "dev": "node scripts/serve.cjs",
+    "start": "node scripts/serve.cjs",
+    "test": "node tests/check-filaments.cjs && node tests/check-system-audio.cjs && node tests/check-music-motion.cjs",
+    "generate:rive": "node scripts/build-rive-ocean.cjs"
+  },
+  "engines": { "node": ">=18" }
+}
